@@ -4,4 +4,4 @@ node_modules
 # Build files
 
 # lock files
-package-lock.json
+package-lock.json'node_modules' 
