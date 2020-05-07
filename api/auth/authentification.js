@@ -14,7 +14,7 @@ exports.verify = (token, secretKey, response) => jwt.verify(token, secretKey, (e
 });
 
 //Generate Token
-exports.sign = (user, secretKey, response) => jwt.sign({user}, secretKey, {expiresIn: '25s'},(err, token) => {
+exports.sign = (user, secretKey, response) => jwt.sign({user}, secretKey, {expiresIn: '1h'},(err, token) => {
     console.log('TOKEN:', token);
     response.json({
         message: "Authentication is successful!",
@@ -26,15 +26,16 @@ exports.sign = (user, secretKey, response) => jwt.sign({user}, secretKey, {expir
 exports.verifyToken = (req, res, next) => {
     //Get auth header value
     const bearerHeader = req.headers['authorization'];
-    console.log('bearerHeader', bearerHeader)
     //Check if bearer is undefined
     if (typeof bearerHeader !== 'undefined'){
         const bearer = bearerHeader.split(' ');
-        console.log(bearer);
         req.token = bearer[1];
         next();
     } else {
         //Forbidden
-        res.sendStatus(403);
+        res.sendStatus(403).json({
+            message: 'Forbidden',
+            description: 'You do not have permission to perform this operation'
+        });
     }
 }
