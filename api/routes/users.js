@@ -53,21 +53,23 @@ router.post('/login', (req, res, next) => {
         .then(user => {
             if(user.length < 1) {
                 return res.status(401).json({
-                    message: 'Auth failed'
+                    message: 'Auth failed',
+                    description: 'Incorrect username!'
                 });
             }
             bcrypt.compare(req.body.password, user[0].password, (err, result) => {
-                if (err) {
-                    return res.status(401).json({
-                        message: 'Auth failed',
-                        error: err
-                    });
-                }
+
                 if (result) {
                     auth.sign({
                         email: user[0].email,
                         userId: user[0]._id
                     }, config.secretKey, res);
+                }else{
+                    return res.status(401).json({
+                        message: 'Auth failed',
+                        error: err,
+                        description: 'Incorrect password!'
+                    });
                 }
             });
        })
