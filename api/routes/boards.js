@@ -41,11 +41,11 @@ router.get('/', (req, res, next) => {
 
 router.post('/', auth.verifyToken, (req, res, next) => {
     jwt.verify(req.token, config.secretKey, (err, authData) => {
-        if(err) {
+        if (err) {
             res.status(403).json({
                 err
             });
-        }else{
+        } else {
             const board = new Board({
                 _id: mongoose.Types.ObjectId(),
                 order: req.body.order,
@@ -84,8 +84,8 @@ router.post('/', auth.verifyToken, (req, res, next) => {
 router.patch('/', (req, res, next) => {
     const req_data = req.body;
     req_data.forEach(board => {
-        Board.updateMany({ _id: board.id}, { $set: { order: board.order } }, ((res, err) => {
-            if(err) return err;
+        Board.updateMany({_id: board.id}, {$set: {order: board.order}}, ((res, err) => {
+            if (err) return err;
             else return console.log(res);
         }));
     });
@@ -101,53 +101,53 @@ router.patch('/:taskId', (req, res, next) => {
             message: "Board doesn't exist yet!"
         })
         else {
-            for(let i = 0; i < board.tasks.length; i++){
+            for (let i = 0; i < board.tasks.length; i++) {
                 if (board.tasks[i].toString() === id) {
                     board.tasks.splice(i, 1);
                 }
             }
             board.save()
-            .then(response => {
-                console.log(`Task ID ${id} removed from ${response.name} board.`);
-                Board.findOne({order: req.body.moveInBoard}, (err, board) => {
-                    if (err) return next(err);
-                    if (!board) return next({
-                        message: "Board doesn't exist yet!"
-                    })
-                    else {
-                        board.tasks.push(id);
-                        board.save()
-                        .then(() => {
-                            console.log(`Task ID ${id} saved in ${board.name} board.`);
-                            Task.updateOne({_id: id}, {
-                                $set: {
-                                    board: board.name
-                                }
-                            })
-                                .exec()
-                                .then(result => {
-                                    console.log(`Task ID ${id} updated w/ respect of ${board.name} board.`);
+                .then(response => {
+                    console.log(`Task ID ${id} removed from ${response.name} board.`);
+                    Board.findOne({order: req.body.moveInBoard}, (err, board) => {
+                        if (err) return next(err);
+                        if (!board) return next({
+                            message: "Board doesn't exist yet!"
+                        })
+                        else {
+                            board.tasks.push(id);
+                            board.save()
+                                .then(() => {
+                                    console.log(`Task ID ${id} saved in ${board.name} board.`);
+                                    Task.updateOne({_id: id}, {
+                                        $set: {
+                                            board: board.name
+                                        }
+                                    })
+                                        .exec()
+                                        .then(result => {
+                                            console.log(`Task ID ${id} updated w/ respect of ${board.name} board.`);
+                                        })
+                                        .catch(() => {
+                                                res.status(500).json({
+                                                    error: `Task was not updated w/ new board name.`
+                                                });
+                                            }
+                                        )
                                 })
                                 .catch(() => {
-                                res.status(500).json({
-                                    error: `Task was not updated w/ new board name.`
-                                });
-                                }
-                            )
-                        })
-                        .catch(() => {
-                            res.status(500).json({
-                                error: `Task was not saved to ${board.name} board.`
-                            });
-                        })
-                    }
+                                    res.status(500).json({
+                                        error: `Task was not saved to ${board.name} board.`
+                                    });
+                                })
+                        }
+                    })
                 })
-            })
-            .catch(() => {
-                res.status(500).json({
-                    error: `Task was not removed from ${board.name} board.`
+                .catch(() => {
+                    res.status(500).json({
+                        error: `Task was not removed from ${board.name} board.`
+                    });
                 });
-            });
         }
     });
 });
@@ -186,33 +186,43 @@ router.get('/:boardId', (req, res, next) => {
 
 });
 
-router.delete('/:boardId', (req, res, next) => {
-    const id = req.params.boardId;
-    const board_order = req.body;
-    Board.deleteOne({_id: id})
-        .exec()
-        .then(() => {
-            board_order.forEach(board => {
-                Board.updateMany({ _id: board.id}, { $set: { order: board.order } }, ((res, err) => {
-                    if(err) return err;
-                    else return console.log(res);
-                }));
-            });
-            res.status(200).json({
-                message: `Board "${id}" Was Deleted...`,
-                deletedBoard: {
-                    id: id
-                },
-                request: {
-                    type: 'DELETE'
-                }
-            });
-        })
-        .catch(err => {
-            res.status(500).json({
-                error: err
-            });
-        });
+router.delete('/:boardId', auth.verifyToken, (req, res, next) => {
+    jwt.verify(req.token, config.secretKey, (err, authData) => {
+            if (err) {
+                res.status(403).json({
+                    err
+                });
+            } else {
+                const id = req.params.boardId;
+                const board_order = req.body;
+                Board.deleteOne({_id: id})
+                    .exec()
+                    .then(() => {
+                        board_order.forEach(board => {
+                            Board.updateMany({_id: board.id}, {$set: {order: board.order}}, ((res, err) => {
+                                if (err) return err;
+                                else return console.log(res);
+                            }));
+                        });
+                        res.status(200).json({
+                            message: `Board "${id}" Was Deleted...`,
+                            authData,
+                            deletedBoard: {
+                                id: id
+                            },
+                            request: {
+                                type: 'DELETE'
+                            }
+                        });
+                    })
+                    .catch(err => {
+                        res.status(500).json({
+                            error: err
+                        });
+                    });
+            }
+        }
+    )
 });
 
 

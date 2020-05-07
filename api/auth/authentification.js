@@ -14,7 +14,7 @@ exports.verify = (token, secretKey, response) => jwt.verify(token, secretKey, (e
 });
 
 //Generate Token
-exports.sign = (user, secretKey, response) => jwt.sign({user}, secretKey, {expiresIn: '1h'},(err, token) => {
+exports.sign = (user, secretKey, response) => jwt.sign({user}, secretKey, {expiresIn: '600s'},(err, token) => {
     console.log('TOKEN:', token);
     response.json({
         message: "Authentication is successful!",
