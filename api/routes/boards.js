@@ -89,6 +89,9 @@ router.patch('/', (req, res, next) => {
             else return console.log(res);
         }));
     });
+    res.status(200).json({
+        message: 'The board order has been reconfigured...'
+    });
 });
 
 
