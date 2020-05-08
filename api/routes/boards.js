@@ -127,6 +127,14 @@ router.patch('/:taskId', (req, res, next) => {
                                         .exec()
                                         .then(result => {
                                             console.log(`Task ID ${id} updated w/ respect of ${board.name} board.`);
+                                            res.status(200).json({
+                                                movedTask: id,
+                                                destinationBoard: board.title,
+                                                message: `This task moved in and updated w/ respect of "${board.title}" board.`,
+                                                request: {
+                                                    type: 'PATCH'
+                                                }
+                                            });
                                         })
                                         .catch(() => {
                                                 res.status(500).json({
@@ -190,7 +198,8 @@ router.delete('/:boardId', auth.verifyToken, (req, res, next) => {
     jwt.verify(req.token, config.secretKey, (err, authData) => {
             if (err) {
                 res.status(403).json({
-                    err
+                    err,
+                    message: 'Your login session is expired! Sign in again to perform this action...'
                 });
             } else {
                 const id = req.params.boardId;
@@ -200,16 +209,14 @@ router.delete('/:boardId', auth.verifyToken, (req, res, next) => {
                     .then(() => {
                         board_order.forEach(board => {
                             Board.updateMany({_id: board.id}, {$set: {order: board.order}}, ((res, err) => {
-                                if (err) return err;
+                                if (err) return console.log(err);
                                 else return console.log(res);
                             }));
                         });
                         res.status(200).json({
                             message: `Board "${id}" Was Deleted...`,
                             authData,
-                            deletedBoard: {
-                                id: id
-                            },
+                            deletedBoard: id,
                             request: {
                                 type: 'DELETE'
                             }

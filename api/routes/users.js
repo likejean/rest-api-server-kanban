@@ -102,20 +102,5 @@ router.post('/', auth.verifyToken, (req, res) => {
     auth.verify(req.token, config.secretKey, res);
 });
 
-// router.post('/login', (req, res) => {
-//     const user = req.body;
-//     console.log('USER', user);
-//
-//     // const user = {
-//     //     id: 1,
-//     //     username: 'likejean',
-//     //     email: 'popachs@yahoo.com'
-//     // }
-//
-// });
-
-// FORMAT OF TOKEN
-// Authorization: Bearer <access_token>
-
 
 module.exports = router;
