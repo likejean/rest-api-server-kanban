@@ -3,6 +3,9 @@ const router = express.Router();
 const Task = require('../models/task');
 const mongoose = require('mongoose');
 const Board = require('../models/board');
+const jwt = require('jsonwebtoken');
+const config = require('../../config');
+const auth = require('../auth/authentification');
 
 router.get('/', (req, res, next) => {
     Task.find()
@@ -42,46 +45,58 @@ router.get('/', (req, res, next) => {
         });
 });
 
-router.post('/', (req, res, next) => {
-    const task = new Task({
-        _id: new mongoose.Types.ObjectId(),
-        title: req.body.task_title,
-        location: req.body.location,
-        description: req.body.task_description,
-        priority: req.body.task_priority,
-        board: req.body.board,
-        first: req.body.first,
-        last: req.body.last
-    });
-    task.save()
-        .then(result => {
-            Board.findOne({name: req.body.board}, (err, board) => {
-                if (err) return next(err);
-                if (!board) return next({
-                    message: "Board doesn't exist yet!"
+router.post('/', auth.verifyToken, (req, res, next) => {
+    jwt.verify(req.token, config.secretKey, (err, authData) => {
+        if (err) {
+            res.status(403).json({
+                err
+            });
+        } else {
+            const task = new Task({
+                _id: new mongoose.Types.ObjectId(),
+                title: req.body.task_title,
+                location: req.body.location,
+                description: req.body.task_description,
+                priority: req.body.task_priority,
+                board: req.body.board,
+                first: req.body.first,
+                last: req.body.last
+            });
+            task.save()
+                .then(result => {
+                    Board.findOne({name: req.body.board}, (err, board) => {
+                        if (err) return next(err);
+                        if (!board) return next({
+                            message: "Board doesn't exist yet!"
+                        })
+                        else {
+                            board.tasks.push(task._id);
+                            board.save()
+                                .then(() => console.log(`Task ${task.title} added to ${board.name} board`))
+                                .catch(() => {
+                                    res.status(500).json({
+                                        error: "Task was not saved to board"
+                                    });
+                                });
+                        }
+                    });
+                    res.status(201).json({
+                        authData,
+                        message: `Task "${task.title}" added to "${result.board}" board`,
+                        createdTask: result,
+                        request: {
+                            type: 'GET'
+                        }
+                    });
                 })
-                else {
-                    board.tasks.push(task._id);
-                    board.save()
-                        .then(() => console.log(`Task ${task.title} added to ${board.name} board`))
-                        .catch(() => {
-                            res.status(500).json({
-                                error: "Task was not saved to board"
-                            });
+                .catch(err => {
+                        res.status(500).json({
+                            error: err
                         });
-                }
-            });
-            res.status(201).json({
-                message: "Handling POST request to /tasks",
-                createdTask: result
-            });
-        })
-        .catch(err => {
-                res.status(500).json({
-                    error: err
-                });
-            }
-        );
+                    }
+                );
+        }}
+    );
 });
 
 
@@ -147,49 +162,62 @@ router.patch('/:taskId', (req, res, next) => {
         });
 });
 
-router.delete('/:taskId', (req, res, next) => {
-    const id = req.params.taskId;
-    Task.deleteOne({_id: id})
-        .exec()
-        .then(result => {
-            console.log(`DELETED TASK w/ id: '${id}'`);
-            Board.findOne({name: req.body.board}, (err, board) => {
-                if (err) return next(err);
-                if (!board) return next({
-                    message: "Board doesn't exist yet!"
-                })
-                else {
-                    for (let i = 0; i < board.tasks.length; i++) {
-                        if (board.tasks[i].toString() === id) {
-                            board.tasks.splice(i, 1);
-                            break;
-                        }
-                    };
-                    board.save()
-                        .then(() => {
-                            console.log(`Task /w id: '${id}' removed from '${board.name}' board`)
+router.delete('/:taskId', auth.verifyToken, (req, res, next) => {
+    jwt.verify(req.token, config.secretKey, (err, authData) => {
+        console.log(req.token);
+        if (err) {
+            res.status(403).json({
+                err,
+                message: 'Your login session is expired! Sign in again to perform this action...'
+            });
+        } else {
+            const id = req.params.taskId;
+            Task.deleteOne({_id: id})
+                .exec()
+                .then(result => {
+                    console.log(`DELETED TASK w/ id: '${id}'`);
+                    Board.findOne({name: req.body.board}, (err, board) => {
+                        if (err) return console.log(err);
+                        if (!board) return next({
+                            message: "Board doesn't exist yet!"
                         })
-                        .catch(() => {
-                            res.status(500).json({
-                                error: "Task was not saved to board"
-                            });
-                        });
-                }
-            });
-            res.status(200).json({
-                message: `Task w/ id: '${id}' Deleted`,
-                deletedTask: {
-                    result: result,
-                    id: id,
-                    board_name: req.body.board
-                }
-            });
-        })
-        .catch(err => {
-            res.status(500).json({
-                error: err
-            });
-        });
+                        else {
+                            for (let i = 0; i < board.tasks.length; i++) {
+                                if (board.tasks[i].toString() === id) {
+                                    board.tasks.splice(i, 1);
+                                    break;
+                                }
+                            }
+                            ;
+                            board.save()
+                                .then(() => {
+                                    console.log(`Task /w id: '${id}' removed from '${board.name}' board`)
+                                })
+                                .catch(() => {
+                                    res.status(500).json({
+                                        error: "Task was not saved to board"
+                                    });
+                                });
+                        }
+                    });
+                    res.status(200).json({
+                        message: `Task "${req.body.title}" was Deleted from Board "${req.body.board}"`,
+                        authData,
+                        deletedTask: {
+                            result: result,
+                            id: id,
+                            board_name: req.body.board
+                        }
+                    });
+                })
+                .catch(err => {
+                    res.status(500).json({
+                        error: err
+                    });
+                });
+            }
+        }
+    );
 });
 
 

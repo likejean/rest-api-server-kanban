@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const verifyAuth = require('../auth/authentification');
 const Board = require('../models/board');
 const Task = require('../models/task');
 const auth = require('../auth/authentification');
@@ -232,7 +231,7 @@ router.delete('/:boardId', auth.verifyToken, (req, res, next) => {
                     });
             }
         }
-    )
+    );
 });
 
 
