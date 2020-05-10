@@ -55,16 +55,16 @@ router.post('/', auth.verifyToken, (req, res, next) => {
             const task = new Task({
                 _id: new mongoose.Types.ObjectId(),
                 title: req.body.task_title,
+                board: req.body.board_name,
                 location: req.body.location,
                 description: req.body.task_description,
                 priority: req.body.task_priority,
-                board: req.body.board,
                 first: req.body.first,
                 last: req.body.last
             });
             task.save()
                 .then(result => {
-                    Board.findOne({name: req.body.board}, (err, board) => {
+                    Board.findOne({name: req.body.board_name}, (err, board) => {
                         if (err) return next(err);
                         if (!board) return next({
                             message: "Board doesn't exist yet!"
