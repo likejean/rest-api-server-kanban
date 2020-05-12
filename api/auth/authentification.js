@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 
 
 //Generate Token
-exports.sign = (user, secretKey, response) => jwt.sign({user}, secretKey, {expiresIn: '45s'},(err, token) => {
+exports.sign = (user, secretKey, response) => jwt.sign({user}, secretKey, {expiresIn: '300s'},(err, token) => {
     console.log('TOKEN:', token);
     response.json({
         message: "Authentication is successful!",
