@@ -7,6 +7,7 @@ const auth = require('../auth/authentification');
 const config = require('../../config');
 
 router.post('/signup', (req, res, next) => {
+    console.log(req.body.email)
     User.find({email: req.body.email})
         .exec()
         .then(user => {
@@ -29,7 +30,7 @@ router.post('/signup', (req, res, next) => {
                         });
                         user.save()
                             .then(result => {
-                                console.log(result);
+                                console.log('result', result);
                                 res.status(201).json({
                                     response: res,
                                     message: `User w/ email ${result.email} created...`
@@ -58,7 +59,6 @@ router.post('/login', (req, res, next) => {
                 });
             }
             bcrypt.compare(req.body.password, user[0].password, (err, result) => {
-
                 if (result) {
                     auth.sign({
                         email: user[0].email,
@@ -72,7 +72,7 @@ router.post('/login', (req, res, next) => {
                     });
                 }
             });
-       })
+       	})
         .catch(err => {
             console.log(err);
             res.status(500).json({
@@ -80,6 +80,8 @@ router.post('/login', (req, res, next) => {
             });
         });
 });
+
+
 
 router.delete('/:userId', (req, res, next) => {
     User.remove({_id: req.params.userId})

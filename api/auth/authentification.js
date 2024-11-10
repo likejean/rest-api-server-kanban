@@ -10,6 +10,7 @@ exports.sign = (user, secretKey, response) => jwt.sign({user}, secretKey, {expir
     })
 });
 
+
 // Verify Token
 exports.verifyToken = (req, res, next) => {
     //Get auth header value
